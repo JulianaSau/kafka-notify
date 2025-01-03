@@ -32,7 +32,7 @@ func getUserIDFromRequest(ctx *gin.Context) (string, error) {
 		return "", ErrNoMessagesFound
 	}
 
-	return userID, sarama.ErrCannotTransitionNilError
+	return userID, nil
 }
 
 // Notification Storage
@@ -87,7 +87,7 @@ func (consumer *Consumer) ConsumeClaim(
 		err := json.Unmarshal(msg.Value, &notification)
 
 		if err != nil {
-			log.Printf("Failed to unmarshal notification: %v", err)
+			log.Printf("failed to unmarshal notification: %v", err)
 			continue
 		}
 
@@ -120,7 +120,7 @@ func setupConsumerGroup(ctx context.Context, store *NotificationStore) {
 	consumerGroup, err := initializeConsumerGroup()
 
 	if err != nil {
-		log.Fatalf("Failed to initialize consumer group: %v", err)
+		log.Printf("failed to initialize consumer group: %v", err)
 	}
 
 	defer consumerGroup.Close()
@@ -134,7 +134,7 @@ func setupConsumerGroup(ctx context.Context, store *NotificationStore) {
 	for {
 		err := consumerGroup.Consume(ctx, []string{ConsumerTopic}, consumer)
 		if err != nil {
-			log.Printf("Error from consumer: %v", err)
+			log.Printf("error from consumer: %v", err)
 		}
 		if ctx.Err() != nil {
 			return
@@ -147,7 +147,7 @@ func handleNotifications(ctx *gin.Context, store *NotificationStore) {
 	// If it doesn’t exist, it returns a 404 Not Found status.
 	userID, err := getUserIDFromRequest(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -191,6 +191,6 @@ func main() {
 		"started at http://localhost%s\n", ConsumerGroup, ConsumerPort)
 
 	if err := router.Run(ConsumerPort); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		log.Printf("Failed to start server: %v", err)
 	}
 }
